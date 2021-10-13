@@ -37,13 +37,16 @@ contract Voting is Admin {
         _;
     }
 
-    uint public winningProposalId;
+    uint public winningProposalId;  // Store the winner Id
     
     //DB for VoterRegistered & Proposals
-    mapping(address=>uint256) _VotersId;
-    Voter[] _Voters;
-    Proposal[] public _Proposals;
+    mapping(address=>uint256) _VotersId;    // Mapping of voter's addresses
+    Voter[] _Voters;                        // Array of voters
+    Proposal[] public _Proposals;           // List of Proposals
     
+    
+    
+    //------------------ Events 
     event VoterRegistered(address voterAddress);
     event ProposalsRegistrationStarted();
     event ProposalsRegistrationEnded();
@@ -55,6 +58,9 @@ contract Voting is Admin {
     event WorkflowStatusChange(WorkflowStatus previousStatus, WorkflowStatus
     newStatus);
     
+    
+    
+    
     constructor() Admin()
     {
         // We start the state machine
@@ -62,7 +68,7 @@ contract Voting is Admin {
     }    
     
     
-    // Admin functions
+    //-------------------- Admin functions
 
     function registerVoter(address addr) public onlySatus(WorkflowStatus.RegisteringVoters)
     {
@@ -111,7 +117,7 @@ contract Voting is Admin {
     }
     
     
-    //Tools 
+    //------------------- Tools 
     function memcmp(bytes memory a, bytes memory b) internal pure returns(bool){
         return (a.length == b.length) && (keccak256(a) == keccak256(b));
     }
@@ -119,17 +125,17 @@ contract Voting is Admin {
     
     // Generic functions
     
-    // Proposal Utilities
+    //------------------- Proposal Utilities
     function submitProposal(string memory desc) public  onlySatus(WorkflowStatus.ProposalsRegistrationStarted)
     {
         for(uint16 i =0; i<_Proposals.length;i++)
-            assert(!memcmp(bytes(_Proposals[i].description),bytes(desc)));
+            assert(!memcmp(bytes(_Proposals[i].description),bytes(desc)));  // check if proposal is already in
         
         Proposal memory prop;
         prop.description = desc;
         //prop.voteCount =0; // implicite           
         
-        _Proposals.push(prop);
+        _Proposals.push(prop); // add the proposal
         emit ProposalRegistered(_Proposals.length-1);
     }
     
@@ -139,8 +145,8 @@ contract Voting is Admin {
     function getProposalNb() public view returns(uint16) {
         return uint16(_Proposals.length);
     }
-    
-    // Vote Utilities
+     
+    //------------------- Vote Utilities
     function voteFor(uint16 proposition) public onlySatus(WorkflowStatus.VotingSessionStarted) {
         assert(isWhiteListed(msg.sender)); // Make sure the sender is WhiteListed
         uint256 indx = _VotersId[msg.sender];
@@ -154,10 +160,10 @@ contract Voting is Admin {
     
     function countVotes() public onlySatus(WorkflowStatus.VotingSessionEnded) onlyOwner()
     {
-        for(uint256 i=0;i<_Voters.length;i++)
+        for(uint256 i=0;i<_Voters.length;i++)                       // cumulate votes and aggregate them on proposals
             _Proposals[_Voters[i].votedProposalId].voteCount++;
 
-        uint winningCount =0;
+        uint winningCount =0;                                       // Find the winner, parsons all the proposals
         for(uint256 i=0;i<_Proposals.length;i++)
             if(_Proposals[i].voteCount>winningCount)
             {
